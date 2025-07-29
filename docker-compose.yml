@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  memcache:
+    image: memcached:1.6-alpine
+    container_name: memcache-server
+    ports:
+      - "11211:11211"
+    command: memcached -m 128
+    restart: unless-stopped
+    networks:
+      - memcache-network
+
+  memcache-editor:
+    build: .
+    container_name: memcache-editor
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - MEMCACHE_HOST=memcache:11211
+      - NODE_ENV=production
+    depends_on:
+      - memcache
+    restart: unless-stopped
+    networks:
+      - memcache-network
+    volumes:
+      - ./logs:/app/logs
+
+networks:
+  memcache-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.122.0/24
+
+volumes:
+  logs:
