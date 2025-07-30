@@ -21,7 +21,7 @@ const handleMemcacheError = (err, res) => {
   res.status(500).json({
     success: false,
     error: 'Memcache connection error',
-    details: err.message
+    details: err.message,
   });
 };
 
@@ -37,7 +37,7 @@ app.get('/api/read/:key', (req, res) => {
   if (!key) {
     return res.status(400).json({
       success: false,
-      error: 'Key is required'
+      error: 'Key is required',
     });
   }
 
@@ -49,23 +49,23 @@ app.get('/api/read/:key', (req, res) => {
     if (data === undefined) {
       return res.status(404).json({
         success: false,
-        error: 'Key not found'
+        error: 'Key not found',
       });
     }
 
     // Get additional key information
-    memcached.stats((statsErr, stats) => {
+    memcached.stats((statsErr, _stats) => {
       if (statsErr) {
         console.warn('Could not retrieve stats:', statsErr);
       }
 
       const response = {
         success: true,
-        key: key,
+        key,
         value: data,
         valueType: typeof data,
         valueSize: JSON.stringify(data).length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       res.json(response);
@@ -80,19 +80,19 @@ app.post('/api/set', (req, res) => {
   if (!key) {
     return res.status(400).json({
       success: false,
-      error: 'Key is required'
+      error: 'Key is required',
     });
   }
 
   if (value === undefined || value === null) {
     return res.status(400).json({
       success: false,
-      error: 'Value is required'
+      error: 'Value is required',
     });
   }
 
   // Default TTL to 0 (no expiration) if not provided
-  const expirationTime = ttl ? parseInt(ttl) : 0;
+  const expirationTime = ttl ? parseInt(ttl, 10) : 0;
 
   memcached.set(key, value, expirationTime, (err, result) => {
     if (err) {
@@ -103,15 +103,15 @@ app.post('/api/set', (req, res) => {
       res.json({
         success: true,
         message: `Key '${key}' set successfully`,
-        key: key,
-        value: value,
+        key,
+        value,
         ttl: expirationTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } else {
       res.status(500).json({
         success: false,
-        error: 'Failed to set key'
+        error: 'Failed to set key',
       });
     }
   });
@@ -124,7 +124,7 @@ app.delete('/api/delete/:key', (req, res) => {
   if (!key) {
     return res.status(400).json({
       success: false,
-      error: 'Key is required'
+      error: 'Key is required',
     });
   }
 
@@ -136,12 +136,12 @@ app.delete('/api/delete/:key', (req, res) => {
     if (result) {
       res.json({
         success: true,
-        message: `Key '${key}' deleted successfully`
+        message: `Key '${key}' deleted successfully`,
       });
     } else {
       res.status(404).json({
         success: false,
-        error: 'Key not found or already deleted'
+        error: 'Key not found or already deleted',
       });
     }
   });
@@ -154,7 +154,7 @@ app.get('/api/health', (req, res) => {
       return res.status(503).json({
         success: false,
         error: 'Memcache not available',
-        details: err.message
+        details: err.message,
       });
     }
 
@@ -162,22 +162,25 @@ app.get('/api/health', (req, res) => {
       success: true,
       status: 'healthy',
       memcache: 'connected',
-      stats: stats
+      stats,
     });
   });
 });
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error('Server error:', err);
   res.status(500).json({
     success: false,
-    error: 'Internal server error'
+    error: 'Internal server error',
   });
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Memcache Editor running on http://localhost:${PORT}`);
   console.log(`Memcache host: ${process.env.MEMCACHE_HOST || 'localhost:11211'}`);
 });
+
+// Export for testing
+module.exports = { app, server };
