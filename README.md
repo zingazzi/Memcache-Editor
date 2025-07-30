@@ -21,6 +21,7 @@ A simple, lightweight web-based panel for managing Memcache keys. This tool prov
 - **Icons**: Font Awesome 6
 - **Containerization**: Docker & Docker Compose
 - **Memcache Server**: memcached 1.6-alpine
+- **Code Quality**: ESLint with Airbnb configuration
 
 ## Prerequisites
 
@@ -431,13 +432,39 @@ docker-compose down
 docker-compose down -v
 ```
 
-## Contributing
+## Development
+
+### Code Quality
+
+This project uses ESLint with Airbnb configuration to maintain high code quality. See [LINTING.md](LINTING.md) for detailed information.
+
+#### Quick Linting Commands
+```bash
+# Check for linting issues
+npm run lint
+
+# Auto-fix linting issues
+npm run lint:fix
+
+# Check with compact output
+npm run lint:check
+```
+
+#### Development Workflow
+1. Make your changes
+2. Run `npm run lint` to check for issues
+3. Run `npm run lint:fix` to auto-fix formatting
+4. Test your changes
+5. Commit with descriptive messages
+
+### Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+3. Make your changes following the linting guidelines
+4. Run linting checks: `npm run lint`
+5. Test thoroughly
+6. Submit a pull request
 
 ## License
 
