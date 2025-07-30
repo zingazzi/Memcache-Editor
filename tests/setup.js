@@ -2,7 +2,7 @@
 
 // Set test environment variables
 process.env.NODE_ENV = 'test';
-process.env.PORT = '3001'; // Use different port for testing
+process.env.PORT = '3002'; // Use different port for testing
 process.env.MEMCACHE_HOST = 'localhost:11212'; // Use different memcache port for testing
 
 // Increase timeout for async operations

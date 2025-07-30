@@ -58,6 +58,7 @@ module.exports = {
     'lines-around-comment': 'off',
     'object-property-newline': 'off',
     'wrap-regex': 'off',
+    'max-len': ['error', { code: 200 }],
     // Jest-specific rules
     'global-require': 'off',
     'arrow-body-style': 'off',

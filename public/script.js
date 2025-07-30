@@ -1,7 +1,18 @@
 // Memcache Editor JavaScript
 
 // Global variables
-let loadingModal;
+let autoRefreshInterval;
+let autoRefreshEnabled = false;
+
+// Initialize loading modal
+const modalElement = document.getElementById('loadingModal');
+if (modalElement && typeof window.bootstrap !== 'undefined') {
+  // eslint-disable-next-line no-unused-vars
+  const loadingModal = new window.bootstrap.Modal(modalElement, {
+    backdrop: 'static',
+    keyboard: false,
+  });
+}
 
 // Utility functions
 function escapeHtml(text) {
@@ -11,203 +22,45 @@ function escapeHtml(text) {
 }
 
 function showLoading() {
-  if (loadingModal) {
-    try {
-      loadingModal.show();
-      // Track when modal started
-      const modalElement = document.getElementById('loadingModal');
-      if (modalElement) {
-        modalElement.setAttribute('data-start-time', Date.now().toString());
-      }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.warn('Failed to show loading modal:', error);
-    }
+  const currentModalElement = document.getElementById('loadingModal');
+  if (currentModalElement) {
+    currentModalElement.classList.add('show');
+    currentModalElement.setAttribute('data-start-time', Date.now().toString());
   }
 }
 
 function hideLoading() {
-  // Multiple attempts to hide the modal
-  const hideModal = () => {
-    if (loadingModal) {
-      try {
-        loadingModal.hide();
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.warn('Failed to hide loading modal:', error);
-      }
-    }
-
-    // Always try manual fallback
-    const modalElement = document.getElementById('loadingModal');
-    if (modalElement) {
-      modalElement.classList.remove('show');
-      modalElement.style.display = 'none';
-      modalElement.setAttribute('aria-hidden', 'true');
-      modalElement.removeAttribute('aria-modal');
-      modalElement.removeAttribute('role');
-      // Add hidden class as last resort
-      modalElement.classList.add('hidden');
-    }
-
-    // Remove body classes
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-
-    // Remove backdrop
-    const backdrop = document.querySelector('.modal-backdrop');
-    if (backdrop) {
-      backdrop.remove();
-    }
-
-    // Remove any remaining modal-related elements
-    document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove());
-  };
-
-  // Try immediately
-  hideModal();
-
-  // Try again after a short delay
-  setTimeout(hideModal, 50);
-
-  // Try one more time after a longer delay
-  setTimeout(hideModal, 200);
+  const currentModalElement = document.getElementById('loadingModal');
+  if (currentModalElement) {
+    currentModalElement.classList.remove('show');
+  }
 }
 
 function clearResults() {
-  document.querySelectorAll('.result-container').forEach((container) => {
-    container.innerHTML = '<p class="text-muted">Results cleared</p>';
+  const resultContainers = document.querySelectorAll('.result-container');
+  resultContainers.forEach((el) => {
+    // eslint-disable-next-line no-param-reassign
+    el.innerHTML = '<p class="text-muted">Results cleared</p>';
   });
 }
 
 function showError(containerId, message) {
-  const container = document.getElementById(containerId);
-
-  const html = `
-        <div class="error-result p-3">
-            <h6><i class="fas fa-exclamation-circle text-danger"></i> Error</h6>
-            <p class="mb-0">${escapeHtml(message)}</p>
-        </div>
+  const containerElement = document.getElementById(containerId);
+  if (containerElement) {
+    const newContent = `
+      <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Error:</strong> ${escapeHtml(message)}
+      </div>
     `;
-
-  container.innerHTML = html;
-}
-
-// Display functions
-function displayReadResult(data) {
-  const container = document.getElementById('read-result');
-
-  const html = `
-        <div class="success-result p-3">
-            <h6><i class="fas fa-check-circle text-success"></i> Key Found</h6>
-            <div class="key-info">
-                <strong>Key:</strong> ${escapeHtml(data.key)}
-            </div>
-            <div class="key-info">
-                <strong>Type:</strong> ${data.valueType}
-            </div>
-            <div class="key-info">
-                <strong>Size:</strong> ${data.valueSize} bytes
-            </div>
-            <div class="key-info">
-                <strong>Retrieved:</strong> ${new Date(data.timestamp).toLocaleString()}
-            </div>
-            <div class="mt-3">
-                <strong>Value:</strong>
-                <div class="value-display">
-                    <pre>${escapeHtml(JSON.stringify(data.value, null, 2))}</pre>
-                </div>
-            </div>
-        </div>
-    `;
-
-  container.innerHTML = html;
-}
-
-function displaySetResult(data) {
-  const container = document.getElementById('set-result');
-
-  const ttlText = data.ttl === 0 ? 'No expiration' : `${data.ttl} seconds`;
-  const expirationText = data.ttl === 0 ? 'Never' : new Date(Date.now() + (data.ttl * 1000)).toLocaleString();
-
-  const html = `
-        <div class="success-result p-3">
-            <h6><i class="fas fa-check-circle text-success"></i> Key Set Successfully</h6>
-            <div class="key-info">
-                <strong>Key:</strong> ${escapeHtml(data.key)}
-            </div>
-            <div class="key-info">
-                <strong>TTL:</strong> ${ttlText}
-            </div>
-            <div class="key-info">
-                <strong>Expires:</strong> ${expirationText}
-            </div>
-            <div class="key-info">
-                <strong>Set at:</strong> ${new Date(data.timestamp).toLocaleString()}
-            </div>
-            <div class="mt-3">
-                <strong>Value:</strong>
-                <div class="value-display">
-                    <pre>${escapeHtml(JSON.stringify(data.value, null, 2))}</pre>
-                </div>
-            </div>
-        </div>
-    `;
-
-  container.innerHTML = html;
-}
-
-function displayDeleteResult(data) {
-  const container = document.getElementById('delete-result');
-
-  const html = `
-        <div class="success-result p-3">
-            <h6><i class="fas fa-check-circle text-success"></i> Success</h6>
-            <p class="mb-0">${data.message}</p>
-        </div>
-    `;
-
-  container.innerHTML = html;
-}
-
-function displayHealthResult(data) {
-  const container = document.getElementById('health-result');
-
-  const statusClass = data.success ? 'success-result' : 'error-result';
-  const statusIcon = data.success ? 'fas fa-check-circle text-success' : 'fas fa-exclamation-circle text-danger';
-  const statusText = data.success ? 'Healthy' : 'Unhealthy';
-
-  let statsHtml = '';
-  if (data.stats) {
-    statsHtml = `
-            <div class="mt-3">
-                <strong>Memcache Statistics:</strong>
-                <div class="value-display">
-                    <pre>${escapeHtml(JSON.stringify(data.stats, null, 2))}</pre>
-                </div>
-            </div>
-        `;
+    containerElement.innerHTML = newContent;
   }
-
-  const html = `
-        <div class="${statusClass} p-3">
-            <h6><i class="${statusIcon}"></i> ${statusText}</h6>
-            <p class="mb-0">
-                <span class="status-indicator ${data.success ? 'status-healthy' : 'status-error'}"></span>
-                Memcache: ${data.memcache || 'Unknown'}
-            </p>
-            ${statsHtml}
-        </div>
-    `;
-
-  container.innerHTML = html;
 }
 
-// API functions
-async function apiCall(url, options = {}) {
+// API call function
+async function apiCall(endpoint, options = {}) {
   try {
-    const response = await fetch(url, {
+    const response = await fetch(endpoint, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -215,103 +68,407 @@ async function apiCall(url, options = {}) {
       ...options,
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.error || `HTTP ${response.status}`);
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
-    return data;
+    return await response.json();
   } catch (error) {
     throw new Error(`API Error: ${error.message}`);
   }
 }
 
-// Read key function
+// Display functions
+function displayReadResult(data) {
+  const container = document.getElementById('read-result');
+  if (!container) return;
+
+  const valueDisplay = typeof data.value === 'object'
+    ? `<pre>${escapeHtml(JSON.stringify(data.value, null, 2))}</pre>`
+    : `<code>${escapeHtml(data.value)}</code>`;
+
+  container.innerHTML = `
+    <div class="alert alert-success">
+      <h6><i class="fas fa-check-circle"></i> Key Found</h6>
+      <p><strong>Key:</strong> <code>${escapeHtml(data.key)}</code></p>
+      <p><strong>Value Type:</strong> <span class="badge bg-info">${data.valueType}</span></p>
+      <p><strong>Size:</strong> <span class="badge bg-secondary">${data.valueSize} bytes</span></p>
+      <p><strong>Timestamp:</strong> <small>${new Date(data.timestamp).toLocaleString()}</small></p>
+      <hr>
+      <h6>Value:</h6>
+      ${valueDisplay}
+    </div>
+  `;
+}
+
+function displaySetResult(data) {
+  const container = document.getElementById('set-result');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="alert alert-success">
+      <h6><i class="fas fa-check-circle"></i> Key Set Successfully</h6>
+      <p><strong>Key:</strong> <code>${escapeHtml(data.key)}</code></p>
+      <p><strong>Value:</strong> <code>${escapeHtml(data.value)}</code></p>
+      <p><strong>TTL:</strong> <span class="badge bg-info">${data.ttl} seconds</span></p>
+      <p><strong>Timestamp:</strong> <small>${new Date(data.timestamp).toLocaleString()}</small></p>
+    </div>
+  `;
+}
+
+function displayDeleteResult(data) {
+  const container = document.getElementById('delete-result');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="alert alert-success">
+      <h6><i class="fas fa-check-circle"></i> Success</h6>
+      <p>${escapeHtml(data.message)}</p>
+    </div>
+  `;
+}
+
+function displayHealthResult(data) {
+  const container = document.getElementById('health-result');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="alert alert-success">
+      <h6><i class="fas fa-heartbeat"></i> Healthy</h6>
+      <p><strong>Status:</strong> <span class="badge bg-success">${data.status}</span></p>
+      <p><strong>Memcache:</strong> <span class="badge bg-info">${data.memcache}</span></p>
+      <p><strong>Timestamp:</strong> <small>${new Date().toLocaleString()}</small></p>
+    </div>
+  `;
+}
+
+// Real-time stats functions
+function addActivityLog(message, type = 'info') {
+  const activityLog = document.getElementById('activity-log');
+  if (!activityLog) return;
+
+  const timestamp = new Date().toLocaleTimeString();
+  let iconClass;
+  if (type === 'error') {
+    iconClass = 'fas fa-exclamation-triangle text-danger';
+  } else if (type === 'success') {
+    iconClass = 'fas fa-check-circle text-success';
+  } else if (type === 'warning') {
+    iconClass = 'fas fa-exclamation-triangle text-warning';
+  } else {
+    iconClass = 'fas fa-info-circle text-info';
+  }
+
+  const logEntry = document.createElement('div');
+  logEntry.className = 'd-flex align-items-center mb-1';
+  logEntry.innerHTML = `
+    <i class="${iconClass} me-2"></i>
+    <span class="flex-grow-1">${escapeHtml(message)}</span>
+    <small class="text-muted">${timestamp}</small>
+  `;
+
+  activityLog.insertBefore(logEntry, activityLog.firstChild);
+
+  // Keep only last 50 entries
+  const entries = activityLog.querySelectorAll('div');
+  if (entries.length > 50) {
+    entries[entries.length - 1].remove();
+  }
+}
+
+function displayStatsResult(data) {
+  if (!data.success) {
+    showError('stats-result', data.error);
+    return;
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  const { summary } = data;
+  const firstServer = Object.values(data.servers)[0];
+
+  // Update connection status
+  const connectionStatus = document.getElementById('connection-status');
+  if (connectionStatus) {
+    connectionStatus.textContent = 'Connected';
+    connectionStatus.className = 'badge bg-success';
+  }
+
+  // Update memory usage
+  const memoryUsage = document.getElementById('memory-usage');
+  if (memoryUsage && firstServer) {
+    const { memory } = firstServer;
+    let progressBarClass;
+    if (memory.usagePercent > 80) {
+      progressBarClass = 'bg-danger';
+    } else if (memory.usagePercent > 60) {
+      progressBarClass = 'bg-warning';
+    } else {
+      progressBarClass = 'bg-success';
+    }
+    memoryUsage.innerHTML = `
+      <div class="mb-1">
+        <strong>${memory.formatted.used}</strong> / ${memory.formatted.total}
+      </div>
+      <div class="progress" style="height: 6px;">
+        <div class="progress-bar ${progressBarClass}"
+             style="width: ${memory.usagePercent}%"></div>
+      </div>
+      <small class="text-muted">${memory.usagePercent}% used</small>
+    `;
+  }
+
+  // Update hit rate
+  const hitRate = document.getElementById('hit-rate');
+  if (hitRate && firstServer) {
+    const { performance } = firstServer;
+    const hitRatePercent = parseFloat(performance.hitRate);
+    let hitRateProgressClass;
+    if (hitRatePercent > 80) {
+      hitRateProgressClass = 'bg-success';
+    } else if (hitRatePercent > 50) {
+      hitRateProgressClass = 'bg-warning';
+    } else {
+      hitRateProgressClass = 'bg-danger';
+    }
+    hitRate.innerHTML = `
+      <div class="mb-1">
+        <strong>${performance.hitRate}</strong>
+      </div>
+      <div class="progress" style="height: 6px;">
+        <div class="progress-bar ${hitRateProgressClass}"
+             style="width: ${hitRatePercent}%"></div>
+      </div>
+      <small class="text-muted">${performance.hits} hits, ${performance.misses} misses</small>
+    `;
+  }
+
+  // Update total keys
+  const totalKeys = document.getElementById('total-keys');
+  if (totalKeys && firstServer) {
+    totalKeys.innerHTML = `
+      <div class="h4 mb-1">${firstServer.items.total.toLocaleString()}</div>
+      <small class="text-muted">active keys</small>
+    `;
+  }
+
+  // Update performance stats
+  const performanceStats = document.getElementById('performance-stats');
+  if (performanceStats && firstServer) {
+    const perf = firstServer.performance;
+    const { items } = firstServer;
+    performanceStats.innerHTML = `
+      <div class="row">
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>Hit Rate:</span>
+            <strong>${perf.hitRate}</strong>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>Evictions:</span>
+            <strong>${perf.evictions.toLocaleString()}</strong>
+          </div>
+        </div>
+      </div>
+      <hr>
+      <div class="row">
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>Expired:</span>
+            <strong>${perf.expired.toLocaleString()}</strong>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>Evicted:</span>
+            <strong>${perf.evicted.toLocaleString()}</strong>
+          </div>
+        </div>
+      </div>
+      <hr>
+      <div class="row">
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>Total Keys:</span>
+            <strong>${items.total.toLocaleString()}</strong>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>Connections:</span>
+            <strong>${items.totalConnections}</strong>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Update server info
+  const serverInfo = document.getElementById('server-info');
+  if (serverInfo && firstServer) {
+    const { connection } = firstServer;
+    const { commands } = firstServer;
+    serverInfo.innerHTML = `
+      <div class="row">
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>Server:</span>
+            <strong>${connection.server}</strong>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>PID:</span>
+            <strong>${connection.pid}</strong>
+          </div>
+        </div>
+      </div>
+      <hr>
+      <div class="row">
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>Uptime:</span>
+            <strong>${Math.floor(connection.uptime / 3600)}h ${Math.floor((connection.uptime % 3600) / 60)}m</strong>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>Max Connections:</span>
+            <strong>${firstServer.items.maxConnections}</strong>
+          </div>
+        </div>
+      </div>
+      <hr>
+      <div class="row">
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>GET Commands:</span>
+            <strong>${commands.get.toLocaleString()}</strong>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="d-flex justify-content-between">
+            <span>SET Commands:</span>
+            <strong>${commands.set.toLocaleString()}</strong>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Add to activity log
+  addActivityLog('Stats refreshed', 'info');
+}
+
+function refreshStats() {
+  showLoading();
+  apiCall('/api/stats')
+    .then((data) => {
+      displayStatsResult(data);
+      hideLoading();
+    })
+    .catch((error) => {
+      showError('stats-result', error.message);
+      hideLoading();
+      addActivityLog(`Stats refresh failed: ${error.message}`, 'error');
+    });
+}
+
+// eslint-disable-next-line no-unused-vars
+function toggleAutoRefresh() {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  const statusElement = document.getElementById('auto-refresh-status');
+  const button = document.getElementById('auto-refresh-btn');
+
+  if (autoRefreshEnabled) {
+    statusElement.textContent = 'On';
+    button.classList.remove('btn-outline-primary');
+    button.classList.add('btn-primary');
+    autoRefreshInterval = setInterval(refreshStats, 5000); // Refresh every 5 seconds
+    addActivityLog('Auto-refresh enabled', 'success');
+  } else {
+    statusElement.textContent = 'Off';
+    button.classList.remove('btn-primary');
+    button.classList.add('btn-outline-primary');
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+    }
+    addActivityLog('Auto-refresh disabled', 'info');
+  }
+}
+
+// Form handlers
 async function handleReadKey(event) {
   event.preventDefault();
-
   const key = document.getElementById('read-key').value.trim();
+
   if (!key) {
     showError('read-result', 'Please enter a key name');
     return;
   }
 
   showLoading();
-
   try {
-    const result = await apiCall(`/api/read/${encodeURIComponent(key)}`);
-    displayReadResult(result);
+    const data = await apiCall(`/api/read/${encodeURIComponent(key)}`);
+    displayReadResult(data);
   } catch (error) {
     showError('read-result', error.message);
   } finally {
-    // Ensure loading modal is hidden
-    setTimeout(() => {
-      hideLoading();
-    }, 100);
+    hideLoading();
   }
 }
 
-// Set key function
 async function handleSetKey(event) {
   event.preventDefault();
-
   const key = document.getElementById('set-key').value.trim();
-  const valueInput = document.getElementById('set-value').value.trim();
-  const ttl = document.getElementById('set-ttl').value.trim();
+  const value = document.getElementById('set-value').value.trim();
+  const ttl = document.getElementById('set-ttl').value;
 
   if (!key) {
     showError('set-result', 'Please enter a key name');
     return;
   }
 
-  if (!valueInput) {
+  if (!value) {
     showError('set-result', 'Please enter a value');
     return;
   }
 
-  // Try to parse as JSON, fallback to string
-  let parsedValue = valueInput;
+  let parsedValue = value;
   try {
-    parsedValue = JSON.parse(valueInput);
+    // Try to parse as JSON if it looks like JSON
+    if (value.startsWith('{') || value.startsWith('[')) {
+      parsedValue = JSON.parse(value);
+    }
   } catch (e) {
-    // If not valid JSON, use as string
-    parsedValue = valueInput;
+    // If JSON parsing fails, use the original string value
   }
 
-  const payload = {
-    key,
-    value: parsedValue,
-    ttl: ttl ? parseInt(ttl, 10) : 0,
-  };
-
   showLoading();
-
   try {
-    const result = await apiCall('/api/set', {
+    const data = await apiCall('/api/set', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        key,
+        value: parsedValue,
+        ttl: parseInt(ttl, 10) || 0,
+      }),
     });
-    displaySetResult(result);
-    // Clear form on success
-    document.getElementById('set-key').value = '';
-    document.getElementById('set-value').value = '';
-    document.getElementById('set-ttl').value = '0';
+    displaySetResult(data);
   } catch (error) {
     showError('set-result', error.message);
   } finally {
-    // Ensure loading modal is hidden
-    setTimeout(() => {
-      hideLoading();
-    }, 100);
+    hideLoading();
   }
 }
 
-// Delete key function
 async function handleDeleteKey(event) {
   event.preventDefault();
-
   const key = document.getElementById('delete-key').value.trim();
+
   if (!key) {
     showError('delete-result', 'Please enter a key name');
     return;
@@ -324,96 +481,77 @@ async function handleDeleteKey(event) {
   }
 
   showLoading();
-
   try {
-    const result = await apiCall(`/api/delete/${encodeURIComponent(key)}`, {
+    const data = await apiCall(`/api/delete/${encodeURIComponent(key)}`, {
       method: 'DELETE',
     });
-    displayDeleteResult(result);
-    document.getElementById('delete-key').value = '';
+    displayDeleteResult(data);
   } catch (error) {
     showError('delete-result', error.message);
   } finally {
-    // Ensure loading modal is hidden
-    setTimeout(() => {
-      hideLoading();
-    }, 100);
+    hideLoading();
   }
 }
 
-// Health check function
+// eslint-disable-next-line no-unused-vars
 async function checkHealth() {
-  const resultContainer = document.getElementById('health-result');
-  resultContainer.innerHTML = '<p class="text-muted">Checking health status...</p>';
-
+  showLoading();
   try {
-    const result = await apiCall('/api/health');
-    displayHealthResult(result);
+    const data = await apiCall('/api/health');
+    displayHealthResult(data);
   } catch (error) {
     showError('health-result', error.message);
+  } finally {
+    hideLoading();
   }
 }
 
-// Navigation functions
+// Navigation function
 // eslint-disable-next-line no-unused-vars
-function showSection(sectionName) {
+function showSection(section) {
   // Hide all sections
-  document.querySelectorAll('.content-section').forEach((section) => {
-    section.style.display = 'none';
+  const sections = document.querySelectorAll('.content-section');
+  sections.forEach((sectionElement) => {
+    // eslint-disable-next-line no-param-reassign
+    sectionElement.style.display = 'none';
   });
 
   // Show selected section
-  document.getElementById(`${sectionName}-section`).style.display = 'block';
-
-  // Update navigation
-  document.querySelectorAll('.nav-link').forEach((link) => {
-    link.classList.remove('active');
-  });
-  event.target.classList.add('active');
-
-  // Update page title
-  const titles = {
-    read: 'Read Key',
-    set: 'Set Key',
-    delete: 'Delete Key',
-    health: 'Health Check',
-  };
-  document.getElementById('page-title').textContent = titles[sectionName];
-}
-
-// Initialize the application
-document.addEventListener('DOMContentLoaded', () => {
-  // Initialize loading modal
-  const modalElement = document.getElementById('loadingModal');
-  if (modalElement && typeof window.bootstrap !== 'undefined') {
-    loadingModal = new window.bootstrap.Modal(modalElement, {
-      backdrop: 'static',
-      keyboard: false,
-    });
+  const selectedSection = document.getElementById(`${section}-section`);
+  if (selectedSection) {
+    selectedSection.style.display = 'block';
   }
 
-  // Set up form event listeners
-  document.getElementById('read-form').addEventListener('submit', handleReadKey);
-  document.getElementById('set-form').addEventListener('submit', handleSetKey);
-  document.getElementById('delete-form').addEventListener('submit', handleDeleteKey);
+  // Update navigation
+  const navLinks = document.querySelectorAll('.nav-link');
+  navLinks.forEach((link) => {
+    link.classList.remove('active');
+  });
 
-  // Global modal cleanup - hide modal if it's stuck
-  setInterval(() => {
-    const currentModalElement = document.getElementById('loadingModal');
-    if (currentModalElement && currentModalElement.classList.contains('show')) {
-      // Check if modal has been showing for more than 10 seconds
-      const modalStartTime = currentModalElement.getAttribute('data-start-time');
-      if (modalStartTime && (Date.now() - parseInt(modalStartTime, 10)) > 10000) {
-        // eslint-disable-next-line no-console
-        console.warn('Modal stuck for more than 10 seconds, forcing hide');
-        hideLoading();
-      }
-    }
-  }, 5000);
+  // Find and activate the correct nav link
+  const activeLink = Array.from(navLinks).find((link) => link.textContent.toLowerCase().includes(section));
+  if (activeLink) {
+    activeLink.classList.add('active');
+  }
 
-  // Initial health check
-  checkHealth();
-});
+  // Update page title
+  const pageTitle = document.getElementById('page-title');
+  if (pageTitle) {
+    const titles = {
+      read: 'Read Key',
+      set: 'Set Key',
+      delete: 'Delete Key',
+      stats: 'Real-time Stats',
+      health: 'Health Check',
+    };
+    pageTitle.textContent = titles[section] || 'Memcache Editor';
+  }
+
+  // Auto-load stats when stats section is shown
+  if (section === 'stats') {
+    refreshStats();
+  }
+}
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (event) => {
@@ -431,9 +569,34 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-// Auto-refresh health status every 30 seconds
-setInterval(() => {
-  if (document.getElementById('health-section').style.display !== 'none') {
-    checkHealth();
+// Event listeners
+document.addEventListener('DOMContentLoaded', () => {
+  // Form submissions
+  const readForm = document.getElementById('read-form');
+  if (readForm) {
+    readForm.addEventListener('submit', handleReadKey);
   }
-}, 30000);
+
+  const setForm = document.getElementById('set-form');
+  if (setForm) {
+    setForm.addEventListener('submit', handleSetKey);
+  }
+
+  const deleteForm = document.getElementById('delete-form');
+  if (deleteForm) {
+    deleteForm.addEventListener('submit', handleDeleteKey);
+  }
+
+  // Auto-refresh health status every 30 seconds
+  setInterval(() => {
+    const currentModalElement = document.getElementById('loadingModal');
+    if (currentModalElement && currentModalElement.classList.contains('show')) {
+      const modalStartTime = currentModalElement.getAttribute('data-start-time');
+      if (modalStartTime && (Date.now() - parseInt(modalStartTime, 10)) > 10000) {
+        // eslint-disable-next-line no-console
+        console.warn('Modal stuck for more than 10 seconds, forcing hide');
+        hideLoading();
+      }
+    }
+  }, 5000);
+});
