@@ -1,138 +1,120 @@
 # Memcache Editor
 
-A simple, lightweight web-based panel for managing Memcache keys. This tool provides an intuitive interface to read and delete memcache keys with detailed information display.
+A simple web-based management panel for Memcached key operations.
 
 ## Features
 
-- **Read Keys**: Retrieve memcache keys with detailed information (value, type, size, timestamp)
-- **Set Keys**: Create or update memcache keys with custom values and TTL (Time To Live)
-- **Delete Keys**: Safely delete memcache keys with confirmation
-- **Health Check**: Monitor memcache connection status and statistics
-- **Modern UI**: Responsive design with Bootstrap 5 and Font Awesome icons
-- **Real-time Updates**: Auto-refresh health status
-- **Error Handling**: Comprehensive error handling and user feedback
+- **Read Keys**: Retrieve and display memcache key values
+- **Set Keys**: Store new key-value pairs with optional TTL
+- **Delete Keys**: Remove keys from memcache
+- **Health Check**: Monitor memcache server status
+- **Real-time Updates**: Live status monitoring
+- **Responsive Design**: Works on desktop and mobile
 
 ## Technology Stack
 
-- **Backend**: Node.js + Express.js
-- **Memcache Client**: memcached npm package
-- **Frontend**: HTML5 + CSS3 + Vanilla JavaScript
-- **UI Framework**: Bootstrap 5
-- **Icons**: Font Awesome 6
-- **Containerization**: Docker & Docker Compose
-- **Memcache Server**: memcached 1.6-alpine
+- **Backend**: Node.js with Express.js
+- **Frontend**: Vanilla JavaScript with Bootstrap
+- **Cache**: Memcached
+- **Code Quality**: ESLint with Airbnb configuration
+- **Testing**: Jest with comprehensive test suite
 
-## Prerequisites
+## Quick Start
 
-### For Docker Compose (Recommended)
-- Docker
-- Docker Compose
+### Prerequisites
 
-### For Manual Installation
 - Node.js (v14 or higher)
-- Memcache server running
-- npm or yarn package manager
+- Memcached server running
 
-## Quick Start with Docker Compose (Recommended)
+### Installation
 
-The easiest way to get started is using Docker Compose, which includes both the memcache server and the editor application.
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd memcacheEditor
+```
 
-### Why Docker Compose?
+2. Install dependencies:
+```bash
+npm install
+```
 
-✅ **Zero Configuration**: No need to install Node.js or memcache separately
-✅ **Isolated Environment**: Everything runs in containers
-✅ **Consistent Setup**: Works the same on any machine
-✅ **Easy Deployment**: One command to start everything
-✅ **Built-in Memcache**: No need to install/configure memcache server
-✅ **Production Ready**: Same setup for development and production
+3. Configure environment (optional):
+```bash
+cp env.example .env
+# Edit .env with your memcache settings
+```
 
-1. **Clone or download the project**
-   ```bash
-   git clone <repository-url>
-   cd memcacheEditor
-   ```
+4. Start the application:
+```bash
+npm start
+```
 
-2. **Start with Docker Compose**
-   ```bash
-   docker-compose up -d
-   ```
+5. Open your browser to `http://localhost:3000`
 
-3. **Access the application**
-   Open your browser and navigate to `http://localhost:3000`
+## Development
 
-4. **Stop the application**
-   ```bash
-   docker-compose down
-   ```
+### Available Scripts
 
-## Manual Installation
+```bash
+# Start the application
+npm start
 
-If you prefer to run without Docker or need to connect to an existing memcache server:
+# Development mode with auto-restart
+npm run dev
 
-1. **Clone or download the project**
-   ```bash
-   git clone <repository-url>
-   cd memcacheEditor
-   ```
+# Run tests
+npm test
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# Run tests in watch mode
+npm run test:watch
 
-3. **Configure environment**
-   ```bash
-   cp env.example .env
-   ```
+# Run tests with coverage
+npm run test:coverage
 
-   Edit `.env` file with your memcache configuration:
-   ```env
-   PORT=3000
-   MEMCACHE_HOST=localhost:11211
-   ```
+# Run linting
+npm run lint
 
-4. **Start the application**
-   ```bash
-   # Development mode (with auto-reload)
-   npm run dev
+# Fix linting issues
+npm run lint:fix
 
-   # Production mode
-   npm start
-   ```
+# Check linting status
+npm run lint:check
+```
 
-5. **Access the application**
-   Open your browser and navigate to `http://localhost:3000`
+### Code Quality
 
-## Usage
+The project uses ESLint with Airbnb configuration for consistent code style:
 
-### Reading Keys
-1. Navigate to the "Read Key" section
-2. Enter the memcache key name
-3. Click "Read Key" or press Ctrl+Enter
-4. View the key's value and detailed information
+- **Configuration**: `.eslintrc.js`
+- **Ignore File**: `.eslintignore`
+- **Documentation**: `LINTING.md`
 
-### Setting Keys
-1. Navigate to the "Set Key" section
-2. Enter the memcache key name
-3. Enter the value (supports text, numbers, or JSON objects)
-4. Set TTL (Time To Live) in seconds (0 = no expiration)
-5. Click "Set Key" or press Ctrl+Enter
+### Testing
 
-### Deleting Keys
-1. Navigate to the "Delete Key" section
-2. Enter the memcache key name to delete
-3. Click "Delete Key" or press Ctrl+Enter
-4. Confirm the deletion when prompted
+Comprehensive test suite with Jest:
 
-### Health Check
-1. Navigate to the "Health Check" section
-2. Click "Check Health" to view memcache status
-3. Health status auto-refreshes every 30 seconds
+- **Unit Tests**: Server-side API testing
+- **Coverage**: 90.76% server code coverage
+- **Mocking**: External dependencies mocked
+- **Documentation**: `TESTING.md`
+
+#### Test Commands
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+
+# Run in watch mode
+npm run test:watch
+```
 
 ## API Endpoints
 
 ### GET /api/read/:key
-Retrieve a memcache key and its information.
+Retrieve a key from memcache.
 
 **Response:**
 ```json
@@ -142,12 +124,12 @@ Retrieve a memcache key and its information.
   "value": "example_value",
   "valueType": "string",
   "valueSize": 13,
-  "timestamp": "2024-01-01T12:00:00.000Z"
+  "timestamp": "2024-01-01T00:00:00.000Z"
 }
 ```
 
 ### POST /api/set
-Set a memcache key with value and optional TTL.
+Set a key in memcache.
 
 **Request Body:**
 ```json
@@ -166,12 +148,12 @@ Set a memcache key with value and optional TTL.
   "key": "example_key",
   "value": "example_value",
   "ttl": 3600,
-  "timestamp": "2024-01-01T12:00:00.000Z"
+  "timestamp": "2024-01-01T00:00:00.000Z"
 }
 ```
 
 ### DELETE /api/delete/:key
-Delete a memcache key.
+Delete a key from memcache.
 
 **Response:**
 ```json
@@ -182,7 +164,7 @@ Delete a memcache key.
 ```
 
 ### GET /api/health
-Check memcache connection health.
+Check memcache server health.
 
 **Response:**
 ```json
@@ -190,262 +172,122 @@ Check memcache connection health.
   "success": true,
   "status": "healthy",
   "memcache": "connected",
-  "stats": { ... }
+  "stats": {
+    "server": "localhost:11211",
+    "pid": 1,
+    "uptime": 100
+  }
 }
 ```
 
 ## Configuration
 
-### Docker Compose Configuration
-
-The `docker-compose.yml` file includes:
-- **memcache-editor**: The main application
-- **memcache**: Memcache server (1.6-alpine)
-- **Network**: Isolated network for services
-- **Volumes**: Log persistence
-
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `3000` | Server port |
-| `MEMCACHE_HOST` | `memcache:11211` | Memcache server address (Docker) |
-| `MEMCACHE_TIMEOUT` | `5000` | Connection timeout (ms) |
-| `DEBUG` | `false` | Enable debug logging |
+Create a `.env` file in the project root:
 
-### Multiple Memcache Servers
-
-To connect to multiple memcache servers, use comma-separated values:
 ```env
-MEMCACHE_HOST=server1:11211,server2:11211,server3:11211
+# Server Configuration
+PORT=3000
+
+# Memcache Configuration
+MEMCACHE_HOST=localhost:11211
+
+# Node Environment
+NODE_ENV=development
 ```
 
-### Customizing Docker Compose
+### Docker Support
 
-You can modify the `docker-compose.yml` file to:
-- Change ports: `"8080:3000"` for different external port
-- Add environment variables
-- Modify memcache memory: `memcached -m 256` for 256MB
-- Add persistent volumes for memcache data
+The project includes Docker configuration:
 
-## Deployment
-
-### Docker Compose (Recommended)
-
-#### Local Development
 ```bash
-# Start with auto-reload for development
-docker-compose -f docker-compose.dev.yml up -d
-
-# Or use the standard compose file
+# Build and run with Docker Compose
 docker-compose up -d
+
+# Or build manually
+docker build -t memcache-editor .
+docker run -p 3000:3000 memcache-editor
 ```
 
-#### Production Deployment
+## Project Structure
 
-1. **Build and start the application**
-   ```bash
-   docker-compose up -d --build
-   ```
-
-2. **View logs**
-   ```bash
-   docker-compose logs -f memcache-editor
-   ```
-
-3. **Stop the application**
-   ```bash
-   docker-compose down
-   ```
-
-### Manual Deployment
-
-#### Local Development
-```bash
-npm run dev
 ```
-
-#### Production Deployment
-
-1. **Install dependencies**
-   ```bash
-   npm install --production
-   ```
-
-2. **Set environment variables**
-   ```bash
-   export PORT=3000
-   export MEMCACHE_HOST=your-memcache-server:11211
-   ```
-
-3. **Start the application**
-   ```bash
-   npm start
-   ```
-
-### EC2 Deployment
-
-#### Option 1: Docker Compose (Recommended)
-
-1. **Install Docker on EC2**
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y docker.io docker-compose
-   sudo usermod -aG docker $USER
-   # Log out and back in for group changes to take effect
-   ```
-
-2. **Clone and deploy**
-   ```bash
-   git clone <repository-url>
-   cd memcacheEditor
-   docker-compose up -d
-   ```
-
-3. **Configure firewall**
-   ```bash
-   sudo ufw allow 3000
-   sudo ufw allow 11211
-   ```
-
-#### Option 2: Manual Installation
-
-1. **Install Node.js on EC2**
-   ```bash
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-   sudo apt-get install -y nodejs
-   ```
-
-2. **Clone and setup the application**
-   ```bash
-   git clone <repository-url>
-   cd memcacheEditor
-   npm install --production
-   ```
-
-3. **Configure environment**
-   ```bash
-   cp env.example .env
-   # Edit .env with your memcache server details
-   ```
-
-4. **Run with PM2 (recommended)**
-   ```bash
-   npm install -g pm2
-   pm2 start server.js --name "memcache-editor"
-   pm2 startup
-   pm2 save
-   ```
-
-5. **Configure firewall**
-   ```bash
-   sudo ufw allow 3000
-   ```
-
-## Security Considerations
-
-- **Network Security**: Ensure memcache server is not exposed to public internet
-- **Authentication**: Consider adding authentication for production use
-- **HTTPS**: Use HTTPS in production environments
-- **Firewall**: Configure firewall rules appropriately
-
-## Troubleshooting
-
-### Docker Compose Issues
-
-1. **Container won't start**
-   ```bash
-   # Check logs
-   docker-compose logs memcache-editor
-   docker-compose logs memcache
-
-   # Restart services
-   docker-compose restart
-   ```
-
-2. **Port already in use**
-   ```bash
-   # Check what's using the port
-   sudo lsof -i :3000
-
-   # Or change the port in docker-compose.yml
-   ports:
-     - "8080:3000"  # Use port 8080 instead
-   ```
-
-3. **Memcache connection issues**
-   ```bash
-   # Check if memcache container is running
-   docker-compose ps
-
-   # Test memcache connection
-   docker-compose exec memcache-editor node -e "
-   const Memcached = require('memcached');
-   const mc = new Memcached('memcache:11211');
-   mc.get('test', console.log);
-   "
-   ```
-
-### Manual Installation Issues
-
-1. **Connection Refused**
-   - Verify memcache server is running
-   - Check `MEMCACHE_HOST` configuration
-   - Ensure firewall allows connections
-
-2. **Key Not Found**
-   - Verify the key exists in memcache
-   - Check key name spelling
-   - Ensure memcache server has the key
-
-3. **Port Already in Use**
-   - Change `PORT` in environment variables
-   - Kill existing process using the port
-
-### Debug Mode
-
-Enable debug logging by setting:
-```env
-DEBUG=true
-```
-
-### Useful Docker Commands
-
-```bash
-# View all containers
-docker-compose ps
-
-# View logs
-docker-compose logs -f
-
-# Restart services
-docker-compose restart
-
-# Rebuild and restart
-docker-compose up -d --build
-
-# Stop all services
-docker-compose down
-
-# Remove volumes (clears memcache data)
-docker-compose down -v
+memcacheEditor/
+├── public/                 # Static files
+│   ├── index.html         # Main HTML file
+│   ├── script.js          # Client-side JavaScript
+│   └── styles.css         # CSS styles
+├── tests/                 # Test files
+│   ├── setup.js          # Jest setup
+│   ├── unit/             # Unit tests
+│   └── README.md         # Test documentation
+├── server.js             # Express server
+├── package.json          # Dependencies and scripts
+├── jest.config.js        # Jest configuration
+├── .eslintrc.js         # ESLint configuration
+├── .eslintignore        # ESLint ignore file
+├── TESTING.md           # Testing documentation
+├── LINTING.md           # Linting documentation
+└── README.md            # This file
 ```
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+### Development Workflow
+
+1. **Fork the repository**
+2. **Create a feature branch**
+3. **Make your changes**
+4. **Run tests**: `npm test`
+5. **Run linting**: `npm run lint`
+6. **Commit your changes**
+7. **Submit a pull request**
+
+### Code Standards
+
+- **Linting**: All code must pass ESLint
+- **Testing**: New features require tests
+- **Coverage**: Maintain 80%+ test coverage
+- **Documentation**: Update docs for new features
+
+### Testing Guidelines
+
+- Write unit tests for new features
+- Test both success and error scenarios
+- Use descriptive test names
+- Follow the existing test patterns
+- See `TESTING.md` for detailed guidelines
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Memcache Connection Failed**
+   - Ensure memcache server is running
+   - Check `MEMCACHE_HOST` environment variable
+   - Verify network connectivity
+
+2. **Port Already in Use**
+   - Change `PORT` environment variable
+   - Kill existing process on port 3000
+
+3. **Tests Failing**
+   - Run `npm install` to ensure dependencies
+   - Check Jest configuration
+   - See `TESTING.md` for debugging tips
+
+4. **Linting Errors**
+   - Run `npm run lint:fix` to auto-fix
+   - Check `.eslintrc.js` configuration
+   - See `LINTING.md` for guidelines
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT License - see LICENSE file for details.
 
 ## Support
 
-For issues and questions:
-1. Check the troubleshooting section
-2. Review the API documentation
-3. Create an issue in the repository
+- **Issues**: Create an issue on GitHub
+- **Documentation**: Check `TESTING.md` and `LINTING.md`
+- **Code Quality**: Follow the established patterns
