@@ -80,6 +80,7 @@ async function apiCall(endpoint, options = {}) {
 }
 
 // Display functions
+
 function displayReadResult(data) {
   const container = document.getElementById('read-result');
   if (!container) return;
@@ -543,6 +544,7 @@ function showSection(section) {
       delete: 'Delete Key',
       stats: 'Real-time Stats',
       health: 'Health Check',
+      bulk: 'Bulk Operations',
     };
     pageTitle.textContent = titles[section] || 'Memcache Editor';
   }
@@ -569,6 +571,314 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+// Bulk Operations Display Functions
+function displayBulkReadResult(data) {
+  const container = document.getElementById('bulk-read-result');
+  if (!container) return;
+
+  const successCount = data.successful;
+  const failureCount = data.failed;
+  const totalCount = data.total;
+
+  let resultHtml = `
+    <div class="alert alert-${data.hasErrors ? 'warning' : 'success'}">
+      <h6><i class="fas fa-${data.hasErrors ? 'exclamation-triangle' : 'check-circle'}"></i> Bulk Read Results</h6>
+      <p><strong>Total:</strong> ${totalCount} keys</p>
+      <p><strong>Successful:</strong> <span class="badge bg-success">${successCount}</span></p>
+      <p><strong>Failed:</strong> <span class="badge bg-danger">${failureCount}</span></p>
+    </div>
+  `;
+
+  if (data.results && data.results.length > 0) {
+    resultHtml += '<div class="mt-3"><h6>Detailed Results:</h6>';
+    data.results.forEach((result) => {
+      const statusClass = result.success ? 'success' : 'danger';
+      const statusIcon = result.success ? 'check-circle' : 'times-circle';
+
+      resultHtml += `
+        <div class="alert alert-${statusClass} alert-sm">
+          <i class="fas fa-${statusIcon}"></i>
+          <strong>${escapeHtml(result.key)}</strong>
+          ${result.success
+    ? `<br><small>Type: ${result.valueType}, Size: ${result.valueSize} bytes</small>`
+    : `<br><small>Error: ${escapeHtml(result.error)}</small>`
+}
+        </div>
+      `;
+    });
+    resultHtml += '</div>';
+  }
+
+  container.innerHTML = resultHtml;
+}
+
+function displayBulkSetResult(data) {
+  const container = document.getElementById('bulk-set-result');
+  if (!container) return;
+
+  const successCount = data.successful;
+  const failureCount = data.failed;
+  const totalCount = data.total;
+
+  let resultHtml = `
+    <div class="alert alert-${data.hasErrors ? 'warning' : 'success'}">
+      <h6><i class="fas fa-${data.hasErrors ? 'exclamation-triangle' : 'check-circle'}"></i> Bulk Set Results</h6>
+      <p><strong>Total:</strong> ${totalCount} operations</p>
+      <p><strong>Successful:</strong> <span class="badge bg-success">${successCount}</span></p>
+      <p><strong>Failed:</strong> <span class="badge bg-danger">${failureCount}</span></p>
+    </div>
+  `;
+
+  if (data.results && data.results.length > 0) {
+    resultHtml += '<div class="mt-3"><h6>Detailed Results:</h6>';
+    data.results.forEach((result) => {
+      const statusClass = result.success ? 'success' : 'danger';
+      const statusIcon = result.success ? 'check-circle' : 'times-circle';
+
+      resultHtml += `
+        <div class="alert alert-${statusClass} alert-sm">
+          <i class="fas fa-${statusIcon}"></i>
+          <strong>${escapeHtml(result.key)}</strong>
+          ${result.success
+    ? `<br><small>TTL: ${result.ttl || 0} seconds</small>`
+    : `<br><small>Error: ${escapeHtml(result.error)}</small>`
+}
+        </div>
+      `;
+    });
+    resultHtml += '</div>';
+  }
+
+  container.innerHTML = resultHtml;
+}
+
+function displayBulkDeleteResult(data) {
+  const container = document.getElementById('bulk-delete-result');
+  if (!container) return;
+
+  const successCount = data.successful;
+  const failureCount = data.failed;
+  const totalCount = data.total;
+
+  let resultHtml = `
+    <div class="alert alert-${data.hasErrors ? 'warning' : 'success'}">
+      <h6><i class="fas fa-${data.hasErrors ? 'exclamation-triangle' : 'check-circle'}"></i> Bulk Delete Results</h6>
+      <p><strong>Total:</strong> ${totalCount} keys</p>
+      <p><strong>Successfully Deleted:</strong> <span class="badge bg-success">${successCount}</span></p>
+      <p><strong>Failed:</strong> <span class="badge bg-danger">${failureCount}</span></p>
+    </div>
+  `;
+
+  if (data.results && data.results.length > 0) {
+    resultHtml += '<div class="mt-3"><h6>Detailed Results:</h6>';
+    data.results.forEach((result) => {
+      const statusClass = result.success ? 'success' : 'danger';
+      const statusIcon = result.success ? 'check-circle' : 'times-circle';
+
+      resultHtml += `
+        <div class="alert alert-${statusClass} alert-sm">
+          <i class="fas fa-${statusIcon}"></i>
+          <strong>${escapeHtml(result.key)}</strong>
+          ${result.success
+    ? '<br><small>Successfully deleted</small>'
+    : `<br><small>Error: ${escapeHtml(result.error)}</small>`
+}
+        </div>
+      `;
+    });
+    resultHtml += '</div>';
+  }
+
+  container.innerHTML = resultHtml;
+}
+
+// Bulk Operations Functions
+async function handleBulkRead(event) {
+  event.preventDefault();
+  showLoading();
+
+  try {
+    const keysText = document.getElementById('bulk-read-keys').value.trim();
+    if (!keysText) {
+      throw new Error('Please enter at least one key');
+    }
+
+    const keys = keysText.split('\n')
+      .map((key) => key.trim())
+      .filter((key) => key.length > 0);
+
+    if (keys.length === 0) {
+      throw new Error('Please enter at least one valid key');
+    }
+
+    if (keys.length > 100) {
+      throw new Error('Maximum 100 keys allowed per bulk operation');
+    }
+
+    const data = await apiCall('/api/bulk/read', {
+      method: 'POST',
+      body: JSON.stringify({ keys }),
+    });
+
+    displayBulkReadResult(data);
+    addActivityLog(`Bulk read completed: ${data.successful} successful, ${data.failed} failed`, 'success');
+  } catch (error) {
+    showError('bulk-read-result', error.message);
+    addActivityLog(`Bulk read failed: ${error.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleBulkSet(event) {
+  event.preventDefault();
+  showLoading();
+
+  try {
+    const operationsText = document.getElementById('bulk-set-data').value.trim();
+    if (!operationsText) {
+      throw new Error('Please enter operations data');
+    }
+
+    let operations;
+    try {
+      operations = JSON.parse(operationsText);
+    } catch (parseError) {
+      throw new Error('Invalid JSON format. Please check your input.');
+    }
+
+    if (!Array.isArray(operations)) {
+      throw new Error('Operations must be an array');
+    }
+
+    if (operations.length === 0) {
+      throw new Error('Please enter at least one operation');
+    }
+
+    if (operations.length > 100) {
+      throw new Error('Maximum 100 operations allowed per bulk operation');
+    }
+
+    // Validate each operation
+    operations.forEach((op, index) => {
+      if (!op.key || op.value === undefined || op.value === null) {
+        throw new Error(`Invalid operation at index ${index}: key and value are required`);
+      }
+    });
+
+    const data = await apiCall('/api/bulk/set', {
+      method: 'POST',
+      body: JSON.stringify({ operations }),
+    });
+
+    displayBulkSetResult(data);
+    addActivityLog(`Bulk set completed: ${data.successful} successful, ${data.failed} failed`, 'success');
+  } catch (error) {
+    showError('bulk-set-result', error.message);
+    addActivityLog(`Bulk set failed: ${error.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleBulkDelete(event) {
+  event.preventDefault();
+  showLoading();
+
+  try {
+    const keysText = document.getElementById('bulk-delete-keys').value.trim();
+    if (!keysText) {
+      throw new Error('Please enter at least one key');
+    }
+
+    const keys = keysText.split('\n')
+      .map((key) => key.trim())
+      .filter((key) => key.length > 0);
+
+    if (keys.length === 0) {
+      throw new Error('Please enter at least one valid key');
+    }
+
+    if (keys.length > 100) {
+      throw new Error('Maximum 100 keys allowed per bulk operation');
+    }
+
+    // Confirm deletion
+    if (!window.confirm(`Are you sure you want to delete ${keys.length} keys? This action cannot be undone.`)) {
+      hideLoading();
+      return;
+    }
+
+    const data = await apiCall('/api/bulk/delete', {
+      method: 'POST',
+      body: JSON.stringify({ keys }),
+    });
+
+    displayBulkDeleteResult(data);
+    addActivityLog(`Bulk delete completed: ${data.successful} successful, ${data.failed} failed`, 'warning');
+  } catch (error) {
+    showError('bulk-delete-result', error.message);
+    addActivityLog(`Bulk delete failed: ${error.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleBulkExport(event) {
+  event.preventDefault();
+  showLoading();
+
+  try {
+    const keysText = document.getElementById('bulk-export-keys').value.trim();
+    if (!keysText) {
+      throw new Error('Please enter at least one key');
+    }
+
+    const keys = keysText.split(',')
+      .map((key) => key.trim())
+      .filter((key) => key.length > 0);
+
+    if (keys.length === 0) {
+      throw new Error('Please enter at least one valid key');
+    }
+
+    if (keys.length > 100) {
+      throw new Error('Maximum 100 keys allowed per export');
+    }
+
+    // Create download link
+    const keysParam = encodeURIComponent(keys.join(','));
+    const downloadUrl = `/api/bulk/export?keys=${keysParam}`;
+
+    // Trigger download
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `memcache-export-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Show success message
+    const container = document.getElementById('bulk-export-result');
+    if (container) {
+      container.innerHTML = `
+        <div class="alert alert-success">
+          <i class="fas fa-check-circle"></i>
+          <strong>Export Successful!</strong><br>
+          <small>Downloaded ${keys.length} keys as JSON file</small>
+        </div>
+      `;
+    }
+
+    addActivityLog(`Exported ${keys.length} keys to JSON file`, 'success');
+  } catch (error) {
+    showError('bulk-export-result', error.message);
+    addActivityLog(`Export failed: ${error.message}`, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
   // Form submissions
@@ -585,6 +895,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const deleteForm = document.getElementById('delete-form');
   if (deleteForm) {
     deleteForm.addEventListener('submit', handleDeleteKey);
+  }
+
+  // Bulk operations form submissions
+  const bulkReadForm = document.getElementById('bulk-read-form');
+  if (bulkReadForm) {
+    bulkReadForm.addEventListener('submit', handleBulkRead);
+  }
+
+  const bulkSetForm = document.getElementById('bulk-set-form');
+  if (bulkSetForm) {
+    bulkSetForm.addEventListener('submit', handleBulkSet);
+  }
+
+  const bulkDeleteForm = document.getElementById('bulk-delete-form');
+  if (bulkDeleteForm) {
+    bulkDeleteForm.addEventListener('submit', handleBulkDelete);
+  }
+
+  const bulkExportForm = document.getElementById('bulk-export-form');
+  if (bulkExportForm) {
+    bulkExportForm.addEventListener('submit', handleBulkExport);
   }
 
   // Auto-refresh health status every 30 seconds

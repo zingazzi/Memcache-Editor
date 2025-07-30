@@ -284,6 +284,282 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
+// Bulk operations endpoints
+app.post('/api/bulk/read', (req, res) => {
+  const { keys } = req.body;
+
+  if (!keys || !Array.isArray(keys) || keys.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Keys array is required and must not be empty',
+    });
+  }
+
+  if (keys.length > 100) {
+    return res.status(400).json({
+      success: false,
+      error: 'Maximum 100 keys allowed per bulk operation',
+    });
+  }
+
+  const results = [];
+  let completed = 0;
+  let hasError = false;
+
+  keys.forEach((key, index) => {
+    memcached.get(key, (err, data) => {
+      completed += 1;
+
+      if (err) {
+        hasError = true;
+        results[index] = {
+          key,
+          success: false,
+          error: err.message,
+        };
+      } else if (data === undefined) {
+        results[index] = {
+          key,
+          success: false,
+          error: 'Key not found',
+        };
+      } else {
+        results[index] = {
+          key,
+          success: true,
+          value: data,
+          valueType: typeof data,
+          valueSize: JSON.stringify(data).length,
+        };
+      }
+
+      if (completed === keys.length) {
+        const successCount = results.filter((r) => r.success).length;
+        const failureCount = results.length - successCount;
+
+        res.json({
+          success: true,
+          message: `Bulk read completed: ${successCount} successful, ${failureCount} failed`,
+          total: keys.length,
+          successful: successCount,
+          failed: failureCount,
+          results,
+          hasErrors: hasError,
+        });
+      }
+    });
+  });
+});
+
+app.post('/api/bulk/set', (req, res) => {
+  const { operations } = req.body;
+
+  if (!operations || !Array.isArray(operations) || operations.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Operations array is required and must not be empty',
+    });
+  }
+
+  if (operations.length > 100) {
+    return res.status(400).json({
+      success: false,
+      error: 'Maximum 100 operations allowed per bulk operation',
+    });
+  }
+
+  // Validate each operation
+  for (let i = 0; i < operations.length; i += 1) {
+    const op = operations[i];
+    if (!op.key || op.value === undefined || op.value === null) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid operation at index ${i}: key and value are required`,
+      });
+    }
+  }
+
+  const results = [];
+  let completed = 0;
+  let hasError = false;
+
+  operations.forEach((operation, index) => {
+    const { key, value, ttl = 0 } = operation;
+    const expirationTime = parseInt(ttl, 10) || 0;
+
+    memcached.set(key, value, expirationTime, (err, result) => {
+      completed += 1;
+
+      if (err) {
+        hasError = true;
+        results[index] = {
+          key,
+          success: false,
+          error: err.message,
+        };
+      } else if (result) {
+        results[index] = {
+          key,
+          success: true,
+          message: `Key '${key}' set successfully`,
+          ttl: expirationTime,
+        };
+      } else {
+        hasError = true;
+        results[index] = {
+          key,
+          success: false,
+          error: 'Failed to set key',
+        };
+      }
+
+      if (completed === operations.length) {
+        const successCount = results.filter((r) => r.success).length;
+        const failureCount = results.length - successCount;
+
+        res.json({
+          success: true,
+          message: `Bulk set completed: ${successCount} successful, ${failureCount} failed`,
+          total: operations.length,
+          successful: successCount,
+          failed: failureCount,
+          results,
+          hasErrors: hasError,
+        });
+      }
+    });
+  });
+});
+
+app.post('/api/bulk/delete', (req, res) => {
+  const { keys } = req.body;
+
+  if (!keys || !Array.isArray(keys) || keys.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Keys array is required and must not be empty',
+    });
+  }
+
+  if (keys.length > 100) {
+    return res.status(400).json({
+      success: false,
+      error: 'Maximum 100 keys allowed per bulk operation',
+    });
+  }
+
+  const results = [];
+  let completed = 0;
+  let hasError = false;
+
+  keys.forEach((key, index) => {
+    memcached.del(key, (err, result) => {
+      completed += 1;
+
+      if (err) {
+        hasError = true;
+        results[index] = {
+          key,
+          success: false,
+          error: err.message,
+        };
+      } else if (result) {
+        results[index] = {
+          key,
+          success: true,
+          message: `Key '${key}' deleted successfully`,
+        };
+      } else {
+        results[index] = {
+          key,
+          success: false,
+          error: 'Key not found or already deleted',
+        };
+      }
+
+      if (completed === keys.length) {
+        const successCount = results.filter((r) => r.success).length;
+        const failureCount = results.length - successCount;
+
+        res.json({
+          success: true,
+          message: `Bulk delete completed: ${successCount} successful, ${failureCount} failed`,
+          total: keys.length,
+          successful: successCount,
+          failed: failureCount,
+          results,
+          hasErrors: hasError,
+        });
+      }
+    });
+  });
+});
+
+app.get('/api/bulk/export', (req, res) => {
+  const { keys } = req.query;
+
+  if (!keys) {
+    return res.status(400).json({
+      success: false,
+      error: 'Keys parameter is required (comma-separated)',
+    });
+  }
+
+  const keyArray = keys.split(',').map((k) => k.trim()).filter((k) => k);
+  if (keyArray.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'At least one valid key is required',
+    });
+  }
+
+  if (keyArray.length > 100) {
+    return res.status(400).json({
+      success: false,
+      error: 'Maximum 100 keys allowed per export',
+    });
+  }
+
+  const results = [];
+  let completed = 0;
+
+  keyArray.forEach((key) => {
+    memcached.get(key, (err, data) => {
+      completed += 1;
+
+      if (err || data === undefined) {
+        results.push({
+          key,
+          success: false,
+          error: err ? err.message : 'Key not found',
+        });
+      } else {
+        results.push({
+          key,
+          success: true,
+          value: data,
+          valueType: typeof data,
+          valueSize: JSON.stringify(data).length,
+        });
+      }
+
+      if (completed === keyArray.length) {
+        const exportData = {
+          exportedAt: new Date().toISOString(),
+          totalKeys: keyArray.length,
+          successfulExports: results.filter((r) => r.success).length,
+          failedExports: results.filter((r) => !r.success).length,
+          data: results,
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="memcache-export-${Date.now()}.json"`);
+        res.json(exportData);
+      }
+    });
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, _next) => {
   // eslint-disable-next-line no-console

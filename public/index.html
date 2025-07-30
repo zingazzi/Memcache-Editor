@@ -45,6 +45,11 @@
                                 <i class="fas fa-heartbeat"></i> Health Check
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('bulk')">
+                                <i class="fas fa-layer-group"></i> Bulk Operations
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </nav>
@@ -310,6 +315,191 @@
                                     </button>
                                     <div id="health-result" class="result-container">
                                         <p class="text-muted">Click "Check Health" to see memcache status</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bulk Operations Section -->
+                <div id="bulk-section" class="content-section" style="display: none;">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-layer-group"></i> Bulk Operations</h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Bulk Operations Tabs -->
+                                    <ul class="nav nav-tabs" id="bulkTabs" role="tablist">
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link active" id="bulk-read-tab" data-bs-toggle="tab" data-bs-target="#bulk-read" type="button" role="tab">
+                                                <i class="fas fa-search"></i> Bulk Read
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link" id="bulk-set-tab" data-bs-toggle="tab" data-bs-target="#bulk-set" type="button" role="tab">
+                                                <i class="fas fa-plus"></i> Bulk Set
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link" id="bulk-delete-tab" data-bs-toggle="tab" data-bs-target="#bulk-delete" type="button" role="tab">
+                                                <i class="fas fa-trash"></i> Bulk Delete
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link" id="bulk-export-tab" data-bs-toggle="tab" data-bs-target="#bulk-export" type="button" role="tab">
+                                                <i class="fas fa-download"></i> Export
+                                            </button>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Tab Content -->
+                                    <div class="tab-content mt-3" id="bulkTabsContent">
+                                        <!-- Bulk Read Tab -->
+                                        <div class="tab-pane fade show active" id="bulk-read" role="tabpanel">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">
+                                                            <h6><i class="fas fa-search"></i> Bulk Read Keys</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <form id="bulk-read-form">
+                                                                <div class="mb-3">
+                                                                    <label for="bulk-read-keys" class="form-label">Keys (one per line)</label>
+                                                                    <textarea class="form-control" id="bulk-read-keys" rows="5" placeholder="Enter keys, one per line&#10;Example:&#10;user:123&#10;session:456&#10;config:app"></textarea>
+                                                                </div>
+                                                                <button type="submit" class="btn btn-primary">
+                                                                    <i class="fas fa-search"></i> Read Keys
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">
+                                                            <h6><i class="fas fa-list"></i> Read Results</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div id="bulk-read-result" class="result-container">
+                                                                <p class="text-muted">Enter keys to read their values</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Bulk Set Tab -->
+                                        <div class="tab-pane fade" id="bulk-set" role="tabpanel">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">
+                                                            <h6><i class="fas fa-plus"></i> Bulk Set Keys</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <form id="bulk-set-form">
+                                                                <div class="mb-3">
+                                                                    <label for="bulk-set-data" class="form-label">Key-Value Pairs (JSON format)</label>
+                                                                    <textarea class="form-control" id="bulk-set-data" rows="8" placeholder='[&#10;  {"key": "user:123", "value": "John Doe", "ttl": 3600},&#10;  {"key": "session:456", "value": {"id": 456, "active": true}, "ttl": 1800}&#10;]'></textarea>
+                                                                </div>
+                                                                <button type="submit" class="btn btn-success">
+                                                                    <i class="fas fa-plus"></i> Set Keys
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">
+                                                            <h6><i class="fas fa-list"></i> Set Results</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div id="bulk-set-result" class="result-container">
+                                                                <p class="text-muted">Enter key-value pairs to set them</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Bulk Delete Tab -->
+                                        <div class="tab-pane fade" id="bulk-delete" role="tabpanel">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">
+                                                            <h6><i class="fas fa-trash"></i> Bulk Delete Keys</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <form id="bulk-delete-form">
+                                                                <div class="mb-3">
+                                                                    <label for="bulk-delete-keys" class="form-label">Keys to Delete (one per line)</label>
+                                                                    <textarea class="form-control" id="bulk-delete-keys" rows="5" placeholder="Enter keys to delete, one per line&#10;Example:&#10;user:123&#10;session:456&#10;temp:789"></textarea>
+                                                                </div>
+                                                                <button type="submit" class="btn btn-danger">
+                                                                    <i class="fas fa-trash"></i> Delete Keys
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">
+                                                            <h6><i class="fas fa-list"></i> Delete Results</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div id="bulk-delete-result" class="result-container">
+                                                                <p class="text-muted">Enter keys to delete them</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Bulk Export Tab -->
+                                        <div class="tab-pane fade" id="bulk-export" role="tabpanel">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">
+                                                            <h6><i class="fas fa-download"></i> Export Keys</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <form id="bulk-export-form">
+                                                                <div class="mb-3">
+                                                                    <label for="bulk-export-keys" class="form-label">Keys to Export (comma-separated)</label>
+                                                                    <textarea class="form-control" id="bulk-export-keys" rows="3" placeholder="Enter keys to export, comma-separated&#10;Example: user:123, session:456, config:app"></textarea>
+                                                                </div>
+                                                                <button type="submit" class="btn btn-info">
+                                                                    <i class="fas fa-download"></i> Export Keys
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">
+                                                            <h6><i class="fas fa-info-circle"></i> Export Info</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div id="bulk-export-result" class="result-container">
+                                                                <p class="text-muted">Enter keys to export them as JSON</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
