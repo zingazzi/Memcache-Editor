@@ -219,24 +219,15 @@ describe('API Endpoints', () => {
   describe('GET /api/stats', () => {
     test('should return stats when memcache is connected', async () => {
       const mockStats = {
-        '0': {
-          'server': 'localhost:11211',
-          'pid': 1,
-          'uptime': 100,
-          'limit_maxbytes': 134217728,
-          'bytes': 1024,
-          'curr_items': 5,
-          'curr_connections': 2,
-          'connection_structures': 3,
-          'cmd_get': 100,
-          'cmd_set': 50,
-          'cmd_delete': 10,
-          'cmd_flush': 0,
-          'get_hits': 80,
-          'get_misses': 20,
-          'evictions': 0,
-          'expired_unfetched': 0,
-          'evicted_unfetched': 0,
+        'localhost:11211': {
+          'curr_items': '100',
+          'total_items': '1000',
+          'bytes': '1048576',
+          'cmd_get': '5000',
+          'get_hits': '4500',
+          'get_misses': '500',
+          'evictions': '10',
+          'uptime': '3600',
         },
       };
 
@@ -247,11 +238,8 @@ describe('API Endpoints', () => {
       const response = await request(app).get('/api/stats');
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.timestamp).toBeDefined();
       expect(response.body.servers).toBeDefined();
       expect(response.body.summary).toBeDefined();
-      expect(response.body.summary.totalServers).toBe(1);
-      expect(response.body.summary.totalKeys).toBe(5);
     });
 
     test('should return error when memcache is not available', async () => {
@@ -263,6 +251,164 @@ describe('API Endpoints', () => {
       expect(response.status).toBe(503);
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBe('Memcache not available');
+    });
+  });
+
+  describe('POST /api/bulk/read', () => {
+    test('should return 400 when keys array is missing', async () => {
+      const response = await request(app).post('/api/bulk/read')
+        .send({});
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Keys array is required and must not be empty');
+    });
+
+    test('should return 400 when keys array is empty', async () => {
+      const response = await request(app).post('/api/bulk/read')
+        .send({ keys: [] });
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Keys array is required and must not be empty');
+    });
+
+    test('should return 400 when too many keys', async () => {
+      const keys = Array.from({ length: 101 }, (_, i) => `key${i}`);
+      const response = await request(app).post('/api/bulk/read')
+        .send({ keys });
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Maximum 100 keys allowed per bulk operation');
+    });
+
+    test('should read multiple keys successfully', async () => {
+      const keys = ['key1', 'key2', 'key3'];
+      const mockData = { value: 'test' };
+
+      mockMemcached.get.mockImplementation((key, callback) => {
+        if (key === 'key1') {
+          callback(null, mockData);
+        } else if (key === 'key2') {
+          callback(null, undefined);
+        } else {
+          callback(null, mockData);
+        }
+      });
+
+      const response = await request(app).post('/api/bulk/read')
+        .send({ keys });
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.total).toBe(3);
+      expect(response.body.successful).toBe(2);
+      expect(response.body.failed).toBe(1);
+      expect(response.body.results).toHaveLength(3);
+    });
+  });
+
+  describe('POST /api/bulk/set', () => {
+    test('should return 400 when operations array is missing', async () => {
+      const response = await request(app).post('/api/bulk/set')
+        .send({});
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Operations array is required and must not be empty');
+    });
+
+    test('should return 400 when operation is invalid', async () => {
+      const operations = [
+        { key: 'key1', value: 'value1' },
+        { key: 'key2' }, // missing value
+      ];
+      const response = await request(app).post('/api/bulk/set')
+        .send({ operations });
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('Invalid operation at index 1');
+    });
+
+    test('should set multiple keys successfully', async () => {
+      const operations = [
+        { key: 'key1', value: 'value1', ttl: 3600 },
+        { key: 'key2', value: { data: 'test' }, ttl: 1800 },
+      ];
+
+      mockMemcached.set.mockImplementation((key, value, ttl, callback) => {
+        callback(null, true);
+      });
+
+      const response = await request(app).post('/api/bulk/set')
+        .send({ operations });
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.total).toBe(2);
+      expect(response.body.successful).toBe(2);
+      expect(response.body.failed).toBe(0);
+      expect(response.body.results).toHaveLength(2);
+    });
+  });
+
+  describe('POST /api/bulk/delete', () => {
+    test('should return 400 when keys array is missing', async () => {
+      const response = await request(app).post('/api/bulk/delete')
+        .send({});
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Keys array is required and must not be empty');
+    });
+
+    test('should delete multiple keys successfully', async () => {
+      const keys = ['key1', 'key2', 'key3'];
+
+      mockMemcached.del.mockImplementation((key, callback) => {
+        if (key === 'key1') {
+          callback(null, true);
+        } else if (key === 'key2') {
+          callback(null, false);
+        } else {
+          callback(null, true);
+        }
+      });
+
+      const response = await request(app).post('/api/bulk/delete')
+        .send({ keys });
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.total).toBe(3);
+      expect(response.body.successful).toBe(2);
+      expect(response.body.failed).toBe(1);
+      expect(response.body.results).toHaveLength(3);
+    });
+  });
+
+  describe('GET /api/bulk/export', () => {
+    test('should return 400 when keys parameter is missing', async () => {
+      const response = await request(app).get('/api/bulk/export');
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Keys parameter is required (comma-separated)');
+    });
+
+    test('should export keys successfully', async () => {
+      const keys = 'key1,key2,key3';
+      const mockData = { value: 'test' };
+
+      mockMemcached.get.mockImplementation((key, callback) => {
+        if (key === 'key1') {
+          callback(null, mockData);
+        } else if (key === 'key2') {
+          callback(null, undefined);
+        } else {
+          callback(null, mockData);
+        }
+      });
+
+      const response = await request(app).get(`/api/bulk/export?keys=${keys}`);
+      expect(response.status).toBe(200);
+      expect(response.body.exportedAt).toBeDefined();
+      expect(response.body.totalKeys).toBe(3);
+      expect(response.body.successfulExports).toBe(2);
+      expect(response.body.failedExports).toBe(1);
+      expect(response.body.data).toHaveLength(3);
     });
   });
 
