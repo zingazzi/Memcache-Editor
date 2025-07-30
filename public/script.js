@@ -4,13 +4,13 @@
 let loadingModal;
 
 // Utility functions
-function escapeHtml (text) {
+function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
 
-function showLoading () {
+function showLoading() {
   if (loadingModal) {
     try {
       loadingModal.show();
@@ -26,7 +26,7 @@ function showLoading () {
   }
 }
 
-function hideLoading () {
+function hideLoading() {
   // Multiple attempts to hide the modal
   const hideModal = () => {
     if (loadingModal) {
@@ -75,13 +75,13 @@ function hideLoading () {
   setTimeout(hideModal, 200);
 }
 
-function clearResults () {
+function clearResults() {
   document.querySelectorAll('.result-container').forEach((container) => {
     container.innerHTML = '<p class="text-muted">Results cleared</p>';
   });
 }
 
-function showError (containerId, message) {
+function showError(containerId, message) {
   const container = document.getElementById(containerId);
 
   const html = `
@@ -95,7 +95,7 @@ function showError (containerId, message) {
 }
 
 // Display functions
-function displayReadResult (data) {
+function displayReadResult(data) {
   const container = document.getElementById('read-result');
 
   const html = `
@@ -125,7 +125,7 @@ function displayReadResult (data) {
   container.innerHTML = html;
 }
 
-function displaySetResult (data) {
+function displaySetResult(data) {
   const container = document.getElementById('set-result');
 
   const ttlText = data.ttl === 0 ? 'No expiration' : `${data.ttl} seconds`;
@@ -158,7 +158,7 @@ function displaySetResult (data) {
   container.innerHTML = html;
 }
 
-function displayDeleteResult (data) {
+function displayDeleteResult(data) {
   const container = document.getElementById('delete-result');
 
   const html = `
@@ -171,7 +171,7 @@ function displayDeleteResult (data) {
   container.innerHTML = html;
 }
 
-function displayHealthResult (data) {
+function displayHealthResult(data) {
   const container = document.getElementById('health-result');
 
   const statusClass = data.success ? 'success-result' : 'error-result';
@@ -205,7 +205,7 @@ function displayHealthResult (data) {
 }
 
 // API functions
-async function apiCall (url, options = {}) {
+async function apiCall(url, options = {}) {
   try {
     const response = await fetch(url, {
       headers: {
@@ -228,7 +228,7 @@ async function apiCall (url, options = {}) {
 }
 
 // Read key function
-async function handleReadKey (event) {
+async function handleReadKey(event) {
   event.preventDefault();
 
   const key = document.getElementById('read-key').value.trim();
@@ -253,7 +253,7 @@ async function handleReadKey (event) {
 }
 
 // Set key function
-async function handleSetKey (event) {
+async function handleSetKey(event) {
   event.preventDefault();
 
   const key = document.getElementById('set-key').value.trim();
@@ -308,7 +308,7 @@ async function handleSetKey (event) {
 }
 
 // Delete key function
-async function handleDeleteKey (event) {
+async function handleDeleteKey(event) {
   event.preventDefault();
 
   const key = document.getElementById('delete-key').value.trim();
@@ -342,7 +342,7 @@ async function handleDeleteKey (event) {
 }
 
 // Health check function
-async function checkHealth () {
+async function checkHealth() {
   const resultContainer = document.getElementById('health-result');
   resultContainer.innerHTML = '<p class="text-muted">Checking health status...</p>';
 
@@ -356,7 +356,7 @@ async function checkHealth () {
 
 // Navigation functions
 // eslint-disable-next-line no-unused-vars
-function showSection (sectionName) {
+function showSection(sectionName) {
   // Hide all sections
   document.querySelectorAll('.content-section').forEach((section) => {
     section.style.display = 'none';

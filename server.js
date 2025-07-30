@@ -17,6 +17,7 @@ app.use(express.static('public'));
 
 // Utility function to handle memcache errors
 const handleMemcacheError = (err, res) => {
+  console.error('Memcache error:', err);
   res.status(500).json({
     success: false,
     error: 'Memcache connection error',
@@ -176,7 +177,10 @@ app.use((err, req, res, _next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Memcache Editor running on http://localhost:${PORT}`);
   console.log(`Memcache host: ${process.env.MEMCACHE_HOST || 'localhost:11211'}`);
 });
+
+// Export for testing
+module.exports = { app, server };
