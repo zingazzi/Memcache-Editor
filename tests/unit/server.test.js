@@ -23,7 +23,9 @@ beforeAll(async () => {
   // Import the server
   const serverModule = require('../../server');
   app = serverModule.app;
-  server = serverModule.server;
+
+  // Start server manually for testing
+  server = app.listen(process.env.PORT || 3002);
 });
 
 afterAll(async () => {
@@ -211,6 +213,56 @@ describe('API Endpoints', () => {
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBe('Memcache connection error');
+    });
+  });
+
+  describe('GET /api/stats', () => {
+    test('should return stats when memcache is connected', async () => {
+      const mockStats = {
+        '0': {
+          'server': 'localhost:11211',
+          'pid': 1,
+          'uptime': 100,
+          'limit_maxbytes': 134217728,
+          'bytes': 1024,
+          'curr_items': 5,
+          'curr_connections': 2,
+          'connection_structures': 3,
+          'cmd_get': 100,
+          'cmd_set': 50,
+          'cmd_delete': 10,
+          'cmd_flush': 0,
+          'get_hits': 80,
+          'get_misses': 20,
+          'evictions': 0,
+          'expired_unfetched': 0,
+          'evicted_unfetched': 0,
+        },
+      };
+
+      mockMemcached.stats.mockImplementation((callback) => {
+        callback(null, mockStats);
+      });
+
+      const response = await request(app).get('/api/stats');
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.timestamp).toBeDefined();
+      expect(response.body.servers).toBeDefined();
+      expect(response.body.summary).toBeDefined();
+      expect(response.body.summary.totalServers).toBe(1);
+      expect(response.body.summary.totalKeys).toBe(5);
+    });
+
+    test('should return error when memcache is not available', async () => {
+      mockMemcached.stats.mockImplementation((callback) => {
+        callback(new Error('Connection failed'));
+      });
+
+      const response = await request(app).get('/api/stats');
+      expect(response.status).toBe(503);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Memcache not available');
     });
   });
 

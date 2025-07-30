@@ -36,6 +36,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('stats')">
+                                <i class="fas fa-chart-line"></i> Real-time Stats
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="#" onclick="showSection('health')">
                                 <i class="fas fa-heartbeat"></i> Health Check
                             </a>
@@ -171,6 +176,119 @@
                                 <div class="card-body">
                                     <div id="delete-result" class="result-container">
                                         <p class="text-muted">Enter a key to delete it from memcache</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-time Stats Section -->
+                <div id="stats-section" class="content-section" style="display: none;">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5><i class="fas fa-chart-line"></i> Real-time Statistics</h5>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="toggleAutoRefresh()" id="auto-refresh-btn">
+                                            <i class="fas fa-sync-alt"></i> Auto-refresh: <span id="auto-refresh-status">Off</span>
+                                        </button>
+                                        <button class="btn btn-sm btn-success" onclick="refreshStats()">
+                                            <i class="fas fa-sync-alt"></i> Refresh Now
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <!-- Connection Status -->
+                                        <div class="col-md-3 mb-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <i class="fas fa-plug fa-2x text-primary mb-2"></i>
+                                                    <h6>Connection Status</h6>
+                                                    <span class="badge bg-success" id="connection-status">Connected</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Memory Usage -->
+                                        <div class="col-md-3 mb-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <i class="fas fa-memory fa-2x text-info mb-2"></i>
+                                                    <h6>Memory Usage</h6>
+                                                    <div id="memory-usage">Loading...</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Hit Rate -->
+                                        <div class="col-md-3 mb-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <i class="fas fa-bullseye fa-2x text-warning mb-2"></i>
+                                                    <h6>Hit Rate</h6>
+                                                    <div id="hit-rate">Loading...</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Total Keys -->
+                                        <div class="col-md-3 mb-3">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <i class="fas fa-key fa-2x text-success mb-2"></i>
+                                                    <h6>Total Keys</h6>
+                                                    <div id="total-keys">Loading...</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Detailed Stats -->
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h6><i class="fas fa-chart-bar"></i> Performance Metrics</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div id="performance-stats">
+                                                        <p class="text-muted">Loading performance metrics...</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h6><i class="fas fa-server"></i> Server Information</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div id="server-info">
+                                                        <p class="text-muted">Loading server information...</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Live Activity -->
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h6><i class="fas fa-activity"></i> Live Activity Log</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div id="activity-log" style="max-height: 200px; overflow-y: auto;">
+                                                        <p class="text-muted">Activity log will appear here...</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
